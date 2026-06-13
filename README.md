@@ -17,15 +17,17 @@ In the Ops Perspective section, we’ll download an image, start a new container
 In the Dev Perspective section, we’ll focus more on the app. We’ll clone some app-code from GitHub, inspect a Dockerfile, containerize the app, run it as a container.
 
 # The Ops Perspective
-When you install Doer, you get two major components:
+When you install Docker, you get two major components:
 • theDockerclient
 • theDockerdaemon(sometimescalledthe“Dockerengine”)
-the daemon implements the runtime, API and everything else required to run Doer.
-In a default Linux installation, the client talks to the daemon via a local IPC/Unix soet at /var/run/docker.sock.
+the daemon implements the runtime, API and everything else required to run Docker.
+In a default Linux installation, the client talks to the daemon via a local IPC/Unix socket at /var/run/docker.sock.
 
 # Images
-It’s useful to think of a Docker image as an object that contains an OS filesystem, an application, and all application dependencies. If you work in operations, it’s like a virtual maine template. A virtual maine template is essentially a stopped virtual maine. In the Doer world, an image is effectively a stopped container. If you’re a developer, you can think of an image as a class.
-Run the docker image ls command on your Doer host. $ docker image ls
+It’s useful to think of a Docker image as an object that contains an OS filesystem, an application, and all application dependencies. If you work in operations, it’s like a virtual maine template. A virtual machine template is essentially a stopped virtual machine. In the Docker world, an image is effectively a stopped container. If you’re a developer, you can think of an image as a class.
+Run the docker image ls command on your Docker host.
+
+$ docker image ls
 REPOSITORY    TAG        IMAGE ID       CREATED       SIZE
 
 $ docker image pull ubuntu:latest
@@ -42,13 +44,13 @@ REPOSITORY TAG IMAGE ID CREATED SIZE
 ubuntu latest 1d622ef86b13 16 hours ago 73.9MB
 
 # Containers
-Now that we have an image pulled locally, we can use the docker container run command to laun a container
+Now that we have an image pulled locally, we can use the docker container run command to launch a container
 from it.
 
 $ docker container run -it ubuntu:latest /bin/bash
 root@6dc20d508db0:/#
 
--it flags swit your shell into the terminal of the container — you are literally
+-it flags switch your shell into the terminal of the container — you are literally
 inside of the new container!
 
 You can attach your shell to the terminal of a running container with the docker container exec command.
@@ -86,11 +88,11 @@ $ docker image pull <repository>:<tag>
 $ docker image pull mongo:4.2.6
 $ docker image pull busybox:latest
 
-First, if you do not specify an image tag aer the repository name, Doer will assume you are referring to the
+First, if you do not specify an image tag after the repository name, Docker will assume you are referring to the
 image tagged as latest. If the repository doesn’t have an image tagged as latest the command will fail.
 
 Pulling images from an unofficial repository is essentially the same — you just need to prepend the repository
-name with a Doer Hub username or organization name.
+name with a Docker Hub username or organization name.
 
 $ docker image pull nigelpoulton/tu-demo:v2
 //This will pull the image tagged as `v2`
@@ -102,8 +104,8 @@ $ docker image ls --filter dangling=true
 Docker currently supports the following filters:
 • dangling: Accepts true or false, and returns only dangling images (true), or non-dangling images (false).
 • before: Requires an image name or ID as argument, and returns all images created before it.
-• since: Same as above, but returns images created aer the specified image.
-• label: Filters images based on the presence of a label or label and value. e docker image ls command
+• since: Same as above, but returns images created after the specified image.
+• label: Filters images based on the presence of a label or label and value. the docker image ls command
 does not display labels in its output.
 
 
@@ -112,17 +114,16 @@ does not display labels in its output.
 $ docker search alpine
 
 # image Layers
-
 To see the layers of an image is to inspect the image with the docker image inspect command.
+
 $ docker image inspect ubuntu:latest
+
 [
     {
         "Id": "sha256:bd3d4369ae.......fa2645f5699037d7d8c6b415a10",
         "RepoTags": [
             "ubuntu:latest"
-
         <Snip>
-
         "RootFS": {
             "Type": "layers",
             "Layers": [
@@ -165,8 +166,77 @@ $ docker container start
 # Starting a simple container
 
 $ docker container run -it ubuntu:latest /bin/bash
+
 the -it flags make the container interactive and
 attach it to your terminal. ubuntu:latest
+
+When you hit Return, the Docker client packaged up the command and POSTed it to the API server running on the Docker daemon.
+the Docker daemon accepted the command and searched the Docker host’s local image repository to see if it already had a copy of the requested image.
+Once the image was pulled, the daemon instructed containerd and runc to create and start the container.
+
+# Container processes
+
+When we started the Ubuntu container in the previous section, we told it to run the Bash shell (/bin/bash). This makes the Bash shell the one and only process running inside of the container.
+
+If you’re logged on to the container and type exit, you’ll terminate the Bash process and the container will exit (terminate). is is because a container cannot exist without its designated main process. This is true of Linux and Windows containers — killing the main process in the container will kill the container.
+
+Press Ctrl-PQ to exit the container without terminating its main process. Doing this will place you ba in the shell of your Doer host and leave the container running in the baground. You can use the docker container ls command to view the list of running containers on your system.
+
+It’s important to understand that this container is still running and you can re-attach your terminal to it with the docker container exec command.
+
+$ docker container exec -it 50949b614477 bash
+root@50949b614477:/#
+
+As you can see, the shell prompt has changed bach to the container. If you run the ps -elf command again you will now see two Bash or PowerShell processes. This is because the docker container exec command created a new Bash or PowerShell process and attached to that. is means typing exit in this shell will not terminate the container, because the original Bash or PowerShell process will continue running.
+Type exit to leave the container and verify it’s still running with a docker container ls. It will still be running.
+If you are following along with the examples, you should stop and delete the container with the following two commands (you will need to substitute the ID of your container).
+
+$ docker container stop 50949b614477
+50949b614477
+
+$ docker container rm 50949b614477
+50949b614477
+
+
+# Containers - The commands
+
+• docker container run.
+• Ctrl-PQ will detach your shell from the terminal of a container and leave the container running (UP) in the background.
+• docker container ls
+• docker container exec runs a new process inside of a running container.
+• docker container stop
+• docker container start
+• docker container rm
+• docker container inspect
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
