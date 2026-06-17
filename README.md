@@ -178,16 +178,16 @@ Once the image was pulled, the daemon instructed containerd and runc to create a
 
 When we started the Ubuntu container in the previous section, we told it to run the Bash shell (/bin/bash). This makes the Bash shell the one and only process running inside of the container.
 
-If you’re logged on to the container and type exit, you’ll terminate the Bash process and the container will exit (terminate). is is because a container cannot exist without its designated main process. This is true of Linux and Windows containers — killing the main process in the container will kill the container.
+If you’re logged on to the container and type exit, you’ll terminate the Bash process and the container will exit (terminate). this is because a container cannot exist without its designated main process. This is true of Linux and Windows containers — killing the main process in the container will kill the container.
 
-Press Ctrl-PQ to exit the container without terminating its main process. Doing this will place you ba in the shell of your Doer host and leave the container running in the baground. You can use the docker container ls command to view the list of running containers on your system.
+Press Ctrl-PQ to exit the container without terminating its main process. Doing this will place you ba in the shell of your Docker host and leave the container running in the background. You can use the docker container ls command to view the list of running containers on your system.
 
 It’s important to understand that this container is still running and you can re-attach your terminal to it with the docker container exec command.
 
 $ docker container exec -it 50949b614477 bash
 root@50949b614477:/#
 
-As you can see, the shell prompt has changed bach to the container. If you run the ps -elf command again you will now see two Bash or PowerShell processes. This is because the docker container exec command created a new Bash or PowerShell process and attached to that. is means typing exit in this shell will not terminate the container, because the original Bash or PowerShell process will continue running.
+As you can see, the shell prompt has changed bach to the container. If you run the ps -elf command again you will now see two Bash or PowerShell processes. This is because the docker container exec command created a new Bash or PowerShell process and attached to that. this means typing exit in this shell will not terminate the container, because the original Bash or PowerShell process will continue running.
 Type exit to leave the container and verify it’s still running with a docker container ls. It will still be running.
 If you are following along with the examples, you should stop and delete the container with the following two commands (you will need to substitute the ID of your container).
 
@@ -209,6 +209,39 @@ $ docker container rm 50949b614477
 • docker container rm
 • docker container inspect
 
+
+# What is Containerizing?
+
+It’s the process of taking an application and its dependencies and packaging it into a container image so it can run anywhere.
+High-level flow: App code + Dockerfile → docker image build → (optional) Push to registry → docker container run.
+
+The Example (Node.js App):
+
+Code: Cloned from github.com/nigelpoulton/psweb.
+
+Dockerfile breakdown (creates a Linux image based on alpine):
+
+FROM alpine – Base layer.
+
+LABEL – Adds maintainer metadata.
+
+RUN apk add nodejs – Installs Node.js (creates a layer).
+
+COPY . /src – Copies app code into the image (creates a layer).
+
+WORKDIR /src – Sets working directory (metadata, not a layer).
+
+RUN npm install – Installs dependencies (creates a layer).
+
+EXPOSE 8080 – Documents the network port (metadata).
+
+ENTRYPOINT ["node", "./app.js"] – Sets the default command (metadata).
+
+Build & Run:
+
+docker image build -t web:latest .                          # Build the image
+docker container run -d --name c1 -p 80:8080 web:latest     # Run in background, mapping host port 80 to container port 8080
+Push to Docker Hub: Tag with your Docker ID (docker image tag web:latest yourid/web:latest) and docker image push.
 
 
 
