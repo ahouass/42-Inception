@@ -22,6 +22,7 @@ In the Dev Perspective section, we’ll focus more on the app. We’ll clone som
 When you install Docker, you get two major components:
 
 • theDockerclient
+
 • theDockerdaemon(sometimescalledthe“Dockerengine”)
 
 the daemon implements the runtime, API and everything else required to run Docker.
@@ -38,8 +39,10 @@ If you’re a developer, you can think of an image as a class.
 Run the docker image ls command on your Docker host.
 
 $ docker image ls
+
 REPOSITORY    TAG        IMAGE ID       CREATED       SIZE
 
+```
 $ docker image pull ubuntu:latest
 latest: Pulling from library/ubuntu 50aff78429b1: Pull complete
 f6d82e297bce: Pull complete
@@ -48,56 +51,73 @@ f6d82e297bce: Pull complete
 fc0342a94c89: Pull complete
 Digest: sha256:fbaf303...c0ea5d1212
 Status: Downloaded newer image for ubuntu:latest
+```
 
+```
 $ docker images
-REPOSITORY TAG IMAGE ID CREATED SIZE
-ubuntu latest 1d622ef86b13 16 hours ago 73.9MB
+REPOSITORY  TAG     IMAGE ID        CREATED         SIZE
+ubuntu      latest  1d622ef86b13    16 hours ago    73.9MB
+```
 
 # Containers
-Now that we have an image pulled locally, we can use the docker container run command to launch a container
-from it.
+Now that we have an image pulled locally,
+we can use the docker container run command to launch a container from it.
 
+```
 $ docker container run -it ubuntu:latest /bin/bash
 root@6dc20d508db0:/#
+```
 
--it flags switch your shell into the terminal of the container — you are literally
-inside of the new container!
+-it flags switch your shell into the terminal of the container you are literally inside of the new container!
 
 You can attach your shell to the terminal of a running container with the docker container exec command.
-
+```
 $ docker container exec -it <container name> bash
 root@6dc20d508db0:/#
+```
 
+```
 $ docker container ls
 CONTAINER ID IMAGE          COMMAND         CREATED       STATUS            NAMES
 6dc20d508db0 ubuntu:latest  "/bin/bash"     9 mins        Up 9 min          vigilant_borg
+```
 
+```
 $ docker container stop vigilant_borg
 vigilant_borg
+```
 
+```
 $ docker container rm vigilant_borg
 vigilant_borg
+```
 
+```
 $ docker container ls -a
 CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES
-
+```
 
 # Images
 
 Docker images are typically small because they contain only the code and dependencies needed to run a single application or service.
 
+```
 $ docker image ls
-
 REPOSITORY TAG IMAGE ID CREATED SIZE
+```
 
+```
 $ docker image pull redis:latest
+```
 
 Image registries contain one or more image repositories. In turn, image repositories contain one or more images.
 
 # Pulling images from an official repository :
+```
 $ docker image pull <repository>:<tag>
 $ docker image pull mongo:4.2.6
 $ docker image pull busybox:latest
+```
 
 First, if you do not specify an image tag after the repository name, Docker will assume you are referring to the
 image tagged as latest. If the repository doesn’t have an image tagged as latest the command will fail.
@@ -105,13 +125,18 @@ image tagged as latest. If the repository doesn’t have an image tagged as late
 Pulling images from an unofficial repository is essentially the same — you just need to prepend the repository
 name with a Docker Hub username or organization name.
 
+```
 $ docker image pull nigelpoulton/tu-demo:v2
 //This will pull the image tagged as `v2`
 //from the `tu-demo` repository within the `nigelpoulton` namespace
+```
 
 # Filtering the output of docker image ls
 
+```
 $ docker image ls --filter dangling=true
+```
+
 Docker currently supports the following filters:
 • dangling: Accepts true or false, and returns only dangling images (true), or non-dangling images (false).
 • before: Requires an image name or ID as argument, and returns all images created before it.
@@ -121,12 +146,15 @@ does not display labels in its output.
 
 
 # Searching Docker Hub from the CLI
-
+```
 $ docker search alpine
+```
 
 # image Layers
+
 To see the layers of an image is to inspect the image with the docker image inspect command.
 
+```
 $ docker image inspect ubuntu:latest
 
 [
@@ -147,23 +175,27 @@ $ docker image inspect ubuntu:latest
         }
     }
 ]
-
+```
 
 # Sharing image layers
 
-Docker images can share layers, which saves disk space and improves performance. When pulling several tagged images from the same repository (using docker image pull -a), Docker recognizes layers it already has locally and outputs "Already exists" instead of downloading them again.
+Docker images can share layers, which saves disk space and improves performance.
+When pulling several tagged images from the same repository (using docker image pull -a),
+Docker recognizes layers it already has locally and outputs "Already exists" instead of downloading them again.
 
 # Deleting Images
-
+```
 $ docker image rm 02674b9cb179
+```
 
 If the image you are trying to delete is in use by a running container you will not be able to delete it.
 Stop and delete any containers before trying the delete operation again.
 
+```
 $ docker image ls -q
 bd3d4369aebc
 4e38e38c8ce0
-
+```
 
 # Containers
 
@@ -172,12 +204,16 @@ A container is the runtime instance of an image.
 $ docker container run -it ubuntu /bin/bash
 the -it flags will connect your current terminal window to the container’s shell.
 
+```
 $ docker container stop
 $ docker container start
+```
 
 # Starting a simple container
 
+```
 $ docker container run -it ubuntu:latest /bin/bash
+```
 
 the -it flags make the container interactive and
 attach it to your terminal. ubuntu:latest
@@ -196,13 +232,15 @@ this is because a container cannot exist without its designated main process.
 This is true of Linux and Windows containers — killing the main process in the container will kill the container.
 
 Press Ctrl-PQ to exit the container without terminating its main process.
-Doing this will place you ba in the shell of your Docker host and leave the container running in the background.
+Doing this will place you back in the shell of your Docker host and leave the container running in the background.
 You can use the docker container ls command to view the list of running containers on your system.
 
 It’s important to understand that this container is still running and you can re-attach your terminal to it with the docker container exec command.
 
+```
 $ docker container exec -it 50949b614477 bash
 root@50949b614477:/#
+```
 
 As you can see, the shell prompt has changed bach to the container.
 If you run the ps -elf command again you will now see two Bash or PowerShell processes.
@@ -212,15 +250,19 @@ Type exit to leave the container and verify it’s still running with a docker c
 If you are following along with the examples,
 you should stop and delete the container with the following two commands (you will need to substitute the ID of your container).
 
+```
 $ docker container stop 50949b614477
 50949b614477
+```
 
+```
 $ docker container rm 50949b614477
 50949b614477
-
+```
 
 # Containers - The commands
 
+```
 • docker container run.
 • Ctrl-PQ will detach your shell from the terminal of a container and leave the container running (UP) in the background.
 • docker container ls
@@ -229,7 +271,7 @@ $ docker container rm 50949b614477
 • docker container start
 • docker container rm
 • docker container inspect
-
+```
 
 # What is Containerizing?
 
@@ -260,10 +302,11 @@ ENTRYPOINT ["node", "./app.js"] – Sets the default command (metadata).
 
 Build & Run:
 
+```
 docker image build -t web:latest .                          # Build the image
 docker container run -d --name c1 -p 80:8080 web:latest     # Run in background, mapping host port 80 to container port 8080
 Push to Docker Hub: Tag with your Docker ID (docker image tag web:latest yourid/web:latest) and docker image push.
-
+```
 
 # Docker Compose
 
@@ -273,10 +316,12 @@ docker-compose up is the most common way to bring up a Compose app (we’re call
 
 By default, docker-compose up expects the name of the Compose file to docker-compose.yml. If your Compose file has a different name, you need to specify it with the -f flag. the following example will deploy an application from a Compose file called prod-equus-bass.yml
 
+```
 $ docker-compose -f prod-equus-bass.yml up
+```
 
+```
 ##############################
-
 version: "3.8" services:
 web-fe: build: .
 command: python app.py ports:
@@ -297,11 +342,16 @@ counter-net:
         counter-vol:
 
 ##############################
+```
 
 We’ll skip through the basics of the file before taking a closer look. e first thing to note is that the file has 4 top-level keys:
+
 • version
+
 • services
+
 • networks
+
 • volumes
 
 Other top-level keys exist, su as secrets and configs, but we’re not looking at those right now.
@@ -327,6 +377,7 @@ or be defined in the volumes top-level key at the bottom of the file.
 
 when you run a container , it creates a virtual interface network (virtual adapter) on the host :
 
+```
 ip link show
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
@@ -343,13 +394,13 @@ ip link show
     link/ether 0e:b0:e8:15:c4:12 brd ff:ff:ff:ff:ff:ff link-netnsid 1
 8: veth88c41f7@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default                     #container3
     link/ether ce:e8:d9:67:27:be brd ff:ff:ff:ff:ff:ff link-netnsid 2
-
+```
 
 
 and inside each container :
 
+```
 / # ifconfig
-
 eth0    Link encap:Ethernet  HWaddr EE:FA:E7:91:A9:4F                         #virtual adapter
         inet addr:172.17.0.4  Bcast:172.17.255.255  Mask:255.255.0.0
         UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
@@ -366,16 +417,19 @@ lo      Link encap:Local Loopback                                             #l
         TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
         collisions:0 txqueuelen:1000 
         RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+```
 
-
+```
 $docker network ls
 
 NETWORK ID     NAME      DRIVER    SCOPE
 273fa9ef9a8c   bridge    bridge    local
 7c9ce3401904   host      host      local
 a56232c7d49d   none      null      local
+```
 
 1. bridge (default network)
+
 Driver: bridge
 
 Purpose: The default network for containers if you don't specify one
@@ -404,6 +458,7 @@ docker run -it alpine sh
 ```
 
 2. host (host network)
+
 Driver: host
 
 Purpose: Removes network isolation, container uses the host's network directly
@@ -431,6 +486,7 @@ Use when: You need maximum performance or your app needs to bind to specific hos
 ```
 
 3. none (null network)
+
 Driver: null
 
 Purpose: Complete network isolation
@@ -457,19 +513,29 @@ docker run -d --network none alpine sleep infinity
 ```
 
 ==> Create an isolated network , only containers with each other , can't connect to the internet :
+```
 $docker network create --internal mynet <container_name>
+```
 
 if you want to ping a container from inside another container using its name :
+```
 --add-host <container_name>:<container_ip>
+```
 
 ==> Create a NETWORK :
+```
 $docker network create <network_name>
+```
 
 ==> Connect a container to a network :
+```
 $docker network connect <network_name> <container_name>
+```
 
 ==> Disconnect a container to a network :
+```
 $docker network disconnect <network_name> <container_name>
+```
 
 # DOCKER STORAGE
 
