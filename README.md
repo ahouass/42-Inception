@@ -2,7 +2,8 @@
 
 Every running container on a Docker node has a runc instance managing it.
 
-the higher-level runtime is called containerd. containerd does a lot more than runc. It manages the entire lifecycle of a container, including pulling images, creating network interfaces, and managing lower-level runc instances.
+the higher-level runtime is called containerd. containerd does a lot more than runc.
+It manages the entire lifecycle of a container, including pulling images, creating network interfaces, and managing lower-level runc instances.
 
 the Docker daemon (dockerd) sits above containerd and performs higher-level tasks such as; exposing the
 Docker remote API, managing images, managing volumes, managing networks, and more...
@@ -12,18 +13,28 @@ Docker Desktop is a packaged product from Docker, Inc. It runs on 64-bit version
 
 • the Opsperspective
 • the Devperspective
+
 In the Ops Perspective section, we’ll download an image, start a new container, log in to the new container, run a command inside of it, and then destroy it.
 In the Dev Perspective section, we’ll focus more on the app. We’ll clone some app-code from GitHub, inspect a Dockerfile, containerize the app, run it as a container.
 
 # The Ops Perspective
+
 When you install Docker, you get two major components:
+
 • theDockerclient
 • theDockerdaemon(sometimescalledthe“Dockerengine”)
+
 the daemon implements the runtime, API and everything else required to run Docker.
 In a default Linux installation, the client talks to the daemon via a local IPC/Unix socket at /var/run/docker.sock.
 
 # Images
-It’s useful to think of a Docker image as an object that contains an OS filesystem, an application, and all application dependencies. If you work in operations, it’s like a virtual maine template. A virtual machine template is essentially a stopped virtual machine. In the Docker world, an image is effectively a stopped container. If you’re a developer, you can think of an image as a class.
+
+It’s useful to think of a Docker image as an object that contains an OS filesystem, an application, and all application dependencies.
+If you work in operations, it’s like a virtual machine template.
+A virtual machine template is essentially a stopped virtual machine.
+In the Docker world, an image is effectively a stopped container.
+If you’re a developer, you can think of an image as a class.
+
 Run the docker image ls command on your Docker host.
 
 $ docker image ls
@@ -76,6 +87,7 @@ CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES
 Docker images are typically small because they contain only the code and dependencies needed to run a single application or service.
 
 $ docker image ls
+
 REPOSITORY TAG IMAGE ID CREATED SIZE
 
 $ docker image pull redis:latest
@@ -109,6 +121,7 @@ does not display labels in its output.
 
 
 # Searching Docker Hub from the CLI
+
 $ docker search alpine
 
 # image Layers
@@ -153,6 +166,7 @@ bd3d4369aebc
 
 
 # Containers
+
 A container is the runtime instance of an image.
 
 $ docker container run -it ubuntu /bin/bash
@@ -174,20 +188,29 @@ Once the image was pulled, the daemon instructed containerd and runc to create a
 
 # Container processes
 
-When we started the Ubuntu container in the previous section, we told it to run the Bash shell (/bin/bash). This makes the Bash shell the one and only process running inside of the container.
+When we started the Ubuntu container in the previous section, we told it to run the Bash shell (/bin/bash).
+This makes the Bash shell the one and only process running inside of the container.
 
-If you’re logged on to the container and type exit, you’ll terminate the Bash process and the container will exit (terminate). this is because a container cannot exist without its designated main process. This is true of Linux and Windows containers — killing the main process in the container will kill the container.
+If you’re logged on to the container and type exit, you’ll terminate the Bash process and the container will exit (terminate).
+this is because a container cannot exist without its designated main process.
+This is true of Linux and Windows containers — killing the main process in the container will kill the container.
 
-Press Ctrl-PQ to exit the container without terminating its main process. Doing this will place you ba in the shell of your Docker host and leave the container running in the background. You can use the docker container ls command to view the list of running containers on your system.
+Press Ctrl-PQ to exit the container without terminating its main process.
+Doing this will place you ba in the shell of your Docker host and leave the container running in the background.
+You can use the docker container ls command to view the list of running containers on your system.
 
 It’s important to understand that this container is still running and you can re-attach your terminal to it with the docker container exec command.
 
 $ docker container exec -it 50949b614477 bash
 root@50949b614477:/#
 
-As you can see, the shell prompt has changed bach to the container. If you run the ps -elf command again you will now see two Bash or PowerShell processes. This is because the docker container exec command created a new Bash or PowerShell process and attached to that. this means typing exit in this shell will not terminate the container, because the original Bash or PowerShell process will continue running.
+As you can see, the shell prompt has changed bach to the container.
+If you run the ps -elf command again you will now see two Bash or PowerShell processes.
+This is because the docker container exec command created a new Bash or PowerShell process and attached to that.
+this means typing exit in this shell will not terminate the container, because the original Bash or PowerShell process will continue running.
 Type exit to leave the container and verify it’s still running with a docker container ls. It will still be running.
-If you are following along with the examples, you should stop and delete the container with the following two commands (you will need to substitute the ID of your container).
+If you are following along with the examples,
+you should stop and delete the container with the following two commands (you will need to substitute the ID of your container).
 
 $ docker container stop 50949b614477
 50949b614477
@@ -253,6 +276,7 @@ By default, docker-compose up expects the name of the Compose file to docker-com
 $ docker-compose -f prod-equus-bass.yml up
 
 ##############################
+
 version: "3.8" services:
 web-fe: build: .
 command: python app.py ports:
@@ -267,8 +291,11 @@ source: counter-vol
     image: "redis:alpine"
     networks:
 counter-net:
-networks: counter-net:
-volumes: counter-vol:
+    networks:
+        counter-net:
+    volumes:
+        counter-vol:
+
 ##############################
 
 We’ll skip through the basics of the file before taking a closer look. e first thing to note is that the file has 4 top-level keys:
@@ -283,7 +310,7 @@ Other top-level keys exist, su as secrets and configs, but we’re not lookin
 the newly built image will be used in a later step to create the container for this service.
 
 • command: python app.py this tells Docker to run a Python app called app.py as the main app in the
-container. e app.py file must exist in the image, and the image must contain Python. the Dockerfile
+container. the app.py file must exist in the image, and the image must contain Python. the Dockerfile
 takes care of both of these requirements.
 
 • ports: Tells Docker to map port 5000 inside the container (-target) to port 5000 on the host (published).
@@ -322,24 +349,27 @@ ip link show
 and inside each container :
 
 / # ifconfig
-eth0      Link encap:Ethernet  HWaddr EE:FA:E7:91:A9:4F                         #virtual adapter
-          inet addr:172.17.0.4  Bcast:172.17.255.255  Mask:255.255.0.0
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:13 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:3 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0 
-          RX bytes:1006 (1006.0 B)  TX bytes:126 (126.0 B)
 
-lo        Link encap:Local Loopback                                             #loopback adapter
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          inet6 addr: ::1/128 Scope:Host
-          UP LOOPBACK RUNNING  MTU:65536  Metric:1
-          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+eth0    Link encap:Ethernet  HWaddr EE:FA:E7:91:A9:4F                         #virtual adapter
+        inet addr:172.17.0.4  Bcast:172.17.255.255  Mask:255.255.0.0
+        UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+        RX packets:13 errors:0 dropped:0 overruns:0 frame:0
+        TX packets:3 errors:0 dropped:0 overruns:0 carrier:0
+        collisions:0 txqueuelen:0 
+        RX bytes:1006 (1006.0 B)  TX bytes:126 (126.0 B)
+
+lo      Link encap:Local Loopback                                             #loopback adapter
+        inet addr:127.0.0.1  Mask:255.0.0.0
+        inet6 addr: ::1/128 Scope:Host
+        UP LOOPBACK RUNNING  MTU:65536  Metric:1
+        RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+        TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+        collisions:0 txqueuelen:1000 
+        RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
 
 $docker network ls
+
 NETWORK ID     NAME      DRIVER    SCOPE
 273fa9ef9a8c   bridge    bridge    local
 7c9ce3401904   host      host      local
