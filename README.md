@@ -1,6 +1,5 @@
 # inception
 
-
 Every running container on a Docker node has a runc instance managing it.
 
 the higher-level runtime is called containerd. containerd does a lot more than runc. It manages the entire lifecycle of a container, including pulling images, creating network interfaces, and managing lower-level runc instances.
@@ -107,7 +106,6 @@ Docker currently supports the following filters:
 • since: Same as above, but returns images created after the specified image.
 • label: Filters images based on the presence of a label or label and value. the docker image ls command
 does not display labels in its output.
-
 
 
 # Searching Docker Hub from the CLI
@@ -244,10 +242,206 @@ docker container run -d --name c1 -p 80:8080 web:latest     # Run in background,
 Push to Docker Hub: Tag with your Docker ID (docker image tag web:latest yourid/web:latest) and docker image push.
 
 
+# Docker Compose
+
+Docker Compose, which deploys and manages multi-container applications on Doer nodes running in single-engine mode.
+
+docker-compose up is the most common way to bring up a Compose app (we’re calling a multi-container app defined in a Compose file a Compose app). It builds or pulls all required images, creates all required networks and volumes, and starts all required containers.
+
+By default, docker-compose up expects the name of the Compose file to docker-compose.yml. If your Compose file has a different name, you need to specify it with the -f flag. the following example will deploy an application from a Compose file called prod-equus-bass.yml
+
+$ docker-compose -f prod-equus-bass.yml up
+
+##############################
+version: "3.8" services:
+web-fe: build: .
+command: python app.py ports:
+- target: 5000 published: 5000
+networks:
+- counter-net
+volumes:
+- type: volume
+source: counter-vol
+        target: /code
+  redis:
+    image: "redis:alpine"
+    networks:
+counter-net:
+networks: counter-net:
+volumes: counter-vol:
+##############################
+
+We’ll skip through the basics of the file before taking a closer look. e first thing to note is that the file has 4 top-level keys:
+• version
+• services
+• networks
+• volumes
+
+Other top-level keys exist, su as secrets and configs, but we’re not looking at those right now.
+
+• build: . this tells Docker to build a new image using the instructions in the Dockerfile in the current directory (.).
+the newly built image will be used in a later step to create the container for this service.
+
+• command: python app.py this tells Docker to run a Python app called app.py as the main app in the
+container. e app.py file must exist in the image, and the image must contain Python. the Dockerfile
+takes care of both of these requirements.
+
+• ports: Tells Docker to map port 5000 inside the container (-target) to port 5000 on the host (published).
+this means that traffic sent to the Docker host on port 5000 will be directed to port 5000 on the container.
+the app inside the container listens on port 5000.
+
+• networks: Tells Docker which network to attach the service’s container to. the network should already
+exist, or be defined in the networks top-level key. If it’s an overlay network, it will need to have the attachable flag so that standalone containers can be attached to it (Compose deploys standalone containers instead of Docker Services).
+
+• volumes: Tells Docker to mount the counter-vol volume (source:) to /code (target:) inside the container. the counter-vol volume needs to already exist,
+or be defined in the volumes top-level key at the bottom of the file.
+
+# DOCKER NETWORK
+
+when you run a container , it creates a virtual interface network (virtual adapter) on the host :
+
+ip link show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+3: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
+    link/ether 7c:ed:8d:6c:56:d6 brd ff:ff:ff:ff:ff:ff
+4: enP9398s1: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc mq master eth0 state UP mode DEFAULT group default qlen 1000
+    link/ether 7c:ed:8d:6c:56:d6 brd ff:ff:ff:ff:ff:ff
+    altname enP9398p0s2
+5: docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default 
+    link/ether 02:42:8a:d7:64:bc brd ff:ff:ff:ff:ff:ff
+6: veth36f4396@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default                     #container1
+    link/ether 5e:c0:16:fc:ed:92 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+7: vetha1b6efa@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default                     #container2
+    link/ether 0e:b0:e8:15:c4:12 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+8: veth88c41f7@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default                     #container3
+    link/ether ce:e8:d9:67:27:be brd ff:ff:ff:ff:ff:ff link-netnsid 2
 
 
 
+and inside each container :
 
+/ # ifconfig
+eth0      Link encap:Ethernet  HWaddr EE:FA:E7:91:A9:4F                         #virtual adapter
+          inet addr:172.17.0.4  Bcast:172.17.255.255  Mask:255.255.0.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:13 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:3 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:1006 (1006.0 B)  TX bytes:126 (126.0 B)
+
+lo        Link encap:Local Loopback                                             #loopback adapter
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+$docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+273fa9ef9a8c   bridge    bridge    local
+7c9ce3401904   host      host      local
+a56232c7d49d   none      null      local
+
+1. bridge (default network)
+Driver: bridge
+
+Purpose: The default network for containers if you don't specify one
+
+Scope: Local (only on this Docker host)
+
+Characteristics:
+
+Containers on this network can communicate with each other using IP addresses
+
+They can not resolve each other's names automatically (unless you use --link which is deprecated)
+
+Containers get IPs like 172.17.0.x
+
+You can expose ports with -p to the host
+
+Example:
+
+bash
+```
+docker run -d --name web nginx
+# This container is on the 'bridge' network
+docker run -it alpine sh
+# Another container on the bridge network
+# They can ping each other by IP but not by name
+```
+
+2. host (host network)
+Driver: host
+
+Purpose: Removes network isolation, container uses the host's network directly
+
+Scope: Local
+
+Characteristics:
+
+Container shares the host's network stack
+
+No IP mapping needed - ports are exposed directly on the host
+
+No network isolation (less secure)
+
+Better performance (no NAT)
+
+Example:
+
+bash
+```
+docker run -d --network host nginx
+# Nginx will be accessible on localhost:80 directly
+# No port mapping needed with -p
+Use when: You need maximum performance or your app needs to bind to specific host ports.
+```
+
+3. none (null network)
+Driver: null
+
+Purpose: Complete network isolation
+
+Scope: Local
+
+Characteristics:
+
+Container has no network interfaces (only loopback 127.0.0.1)
+
+Cannot access external networks
+
+Maximum security isolation
+
+No inbound/outbound network traffic
+
+Example:
+
+bash
+```
+docker run -d --network none alpine sleep infinity
+# Container cannot ping anything or be pinged
+# Only localhost works
+```
+
+==> Create an isolated network , only containers with each other , can't connect to the internet :
+$docker network create --internal mynet <container_name>
+
+if you want to ping a container from inside another container using its name :
+--add-host <container_name>:<container_ip>
+
+==> Create a NETWORK :
+$docker network create <network_name>
+
+==> Connect a container to a network :
+$docker network connect <network_name> <container_name>
+
+==> Disconnect a container to a network :
+$docker network disconnect <network_name> <container_name>
+
+# DOCKER STORAGE
 
 
 
