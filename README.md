@@ -537,7 +537,86 @@ $docker network connect <network_name> <container_name>
 $docker network disconnect <network_name> <container_name>
 ```
 
-# DOCKER STORAGE
+# DOCKER Volumes
+
+Definitions:
+
+*Non-persistent data*: Temporary data tied to container lifecycle. Deleted when container is removed.
+
+*Persistent data*: Data that must survive container deletion. Stored in volumes.
+
+*Volumes*: Independent objects decoupled from containers. Can be managed separately and survive container deletion.
+
+
+Command                                 Description
+
+docker volume create myvol              Create a new volume
+
+docker volume ls	                    List all volumes
+
+docker volume inspect myvol	            Show volume details (location, driver, etc.)
+
+docker volume rm myvol	                Delete a specific volume
+
+docker volume prune	                    Delete all unused volumes (caution!)
+
+docker plugin install	                Install a volume driver plugin
+
+docker plugin ls	                    List installed plugins
+
+
+# Mount a Volume to Container:
+
+Using --mount (recommended):
+```
+bash
+docker container run -dit --name mycontainer --mount source=myvol,target=/app/data alpine
+```
+
+Using -v (shorter):
+```
+bash
+docker container run -dit --name mycontainer -v myvol:/app/data alpine
+```
+
+# Key Points:
+
+Volumes outlive containers - delete container, volume stays
+
+Volumes created automatically if specified and doesn't exist
+
+Cannot delete a volume that's in use by a container
+
+Storage drivers manage local storage (overlay2 recommended for Linux)
+
+Third-party plugins enable external storage (cloud, SAN, NAS)
+
+Data corruption risk when multiple containers share same volume - design apps carefully
+
+#Quick Example:
+
+```
+# Create volume
+docker volume create mydata
+
+# Run container with volume
+docker run -dit --name app -v mydata:/app/data alpine
+
+# Write data (inside container)
+docker exec app sh -c "echo 'persistent' > /app/data/file.txt"
+
+# Delete container
+docker rm -f app
+
+# Volume still exists with data
+docker volume ls
+docker volume inspect mydata
+```
+
+
+
+
+
 
 
 
