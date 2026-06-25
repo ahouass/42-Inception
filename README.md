@@ -273,106 +273,6 @@ $ docker container rm 50949b614477
 • docker container inspect
 ```
 
-# What is Containerizing?
-
-It’s the process of taking an application and its dependencies and packaging it into a container image so it can run anywhere.
-High-level flow: App code + Dockerfile → docker image build → (optional) Push to registry → docker container run.
-
-The Example (Node.js App):
-
-Code: Cloned from github.com/nigelpoulton/psweb.
-
-Dockerfile breakdown (creates a Linux image based on alpine):
-
-FROM alpine – Base layer.
-
-LABEL – Adds maintainer metadata.
-
-RUN apk add nodejs – Installs Node.js (creates a layer).
-
-COPY . /src – Copies app code into the image (creates a layer).
-
-WORKDIR /src – Sets working directory (metadata, not a layer).
-
-RUN npm install – Installs dependencies (creates a layer).
-
-EXPOSE 8080 – Documents the network port (metadata).
-
-ENTRYPOINT ["node", "./app.js"] – Sets the default command (metadata).
-
-Build & Run:
-
-```
-docker image build -t web:latest .                          # Build the image
-docker container run -d --name c1 -p 80:8080 web:latest     # Run in background, mapping host port 80 to container port 8080
-Push to Docker Hub: Tag with your Docker ID (docker image tag web:latest yourid/web:latest) and docker image push.
-```
-
-# Docker Compose
-
-Docker Compose, which deploys and manages multi-container applications on Doer nodes running in single-engine mode.
-
-docker-compose up is the most common way to bring up a Compose app (we’re calling a multi-container app defined in a Compose file a Compose app). It builds or pulls all required images, creates all required networks and volumes, and starts all required containers.
-
-By default, docker-compose up expects the name of the Compose file to docker-compose.yml. If your Compose file has a different name, you need to specify it with the -f flag. the following example will deploy an application from a Compose file called prod-equus-bass.yml
-
-```
-$ docker-compose -f prod-equus-bass.yml up
-```
-
-```
-##############################
-version: "3.8" services:
-web-fe: build: .
-command: python app.py ports:
-- target: 5000 published: 5000
-networks:
-- counter-net
-volumes:
-- type: volume
-source: counter-vol
-        target: /code
-  redis:
-    image: "redis:alpine"
-    networks:
-counter-net:
-    networks:
-        counter-net:
-    volumes:
-        counter-vol:
-
-##############################
-```
-
-We’ll skip through the basics of the file before taking a closer look. e first thing to note is that the file has 4 top-level keys:
-
-• version
-
-• services
-
-• networks
-
-• volumes
-
-Other top-level keys exist, su as secrets and configs, but we’re not looking at those right now.
-
-• build: . this tells Docker to build a new image using the instructions in the Dockerfile in the current directory (.).
-the newly built image will be used in a later step to create the container for this service.
-
-• command: python app.py this tells Docker to run a Python app called app.py as the main app in the
-container. the app.py file must exist in the image, and the image must contain Python. the Dockerfile
-takes care of both of these requirements.
-
-• ports: Tells Docker to map port 5000 inside the container (-target) to port 5000 on the host (published).
-this means that traffic sent to the Docker host on port 5000 will be directed to port 5000 on the container.
-the app inside the container listens on port 5000.
-
-• networks: Tells Docker which network to attach the service’s container to. the network should already
-exist, or be defined in the networks top-level key. If it’s an overlay network, it will need to have the attachable flag so that standalone containers can be attached to it (Compose deploys standalone containers instead of Docker Services).
-
-• volumes: Tells Docker to mount the counter-vol volume (source:) to /code (target:) inside the container. the counter-vol volume needs to already exist,
-or be defined in the volumes top-level key at the bottom of the file.
-
 # DOCKER NETWORK
 
 when you run a container , it creates a virtual interface network (virtual adapter) on the host :
@@ -613,6 +513,415 @@ docker volume ls
 docker volume inspect mydata
 ```
 
+# What is Containerizing?
+
+It’s the process of taking an application and its dependencies and packaging it into a container image so it can run anywhere.
+High-level flow: App code + Dockerfile → docker image build → (optional) Push to registry → docker container run.
+
+The Example :
+
+FROM            Base image to start from
+
+WORKDIR         Set working directory inside container
+
+COPY            Copy files from host to container
+
+RUN             Execute commands during build (creates layer)
+
+EXPOSE          Document which port the app uses
+
+CMD             Default command to run when container starts
+
+ENV             Set environment variables
+
+LABEL           Add metadata to image
+
+Build & Run:
+
+```
+docker image build -t web:latest .                          # Build the image
+docker container run -d --name c1 -p 80:8080 web:latest     # Run in background, mapping host port 80 to container port 8080
+Push to Docker Hub: Tag with your Docker ID (docker image tag web:latest yourid/web:latest) and docker image push.
+```
+
+
+
+# Dockerfile Instructions - Complete Guide
+
+Here are all the essential Dockerfile commands you need to know, organized by category:
+
+1. FROM (Base Image)
+
+Purpose: Sets the base image to build upon (MUST be first instruction)
+
+dockerfile
+```
+FROM alpine:latest
+FROM python:3.9-slim
+FROM node:18-alpine
+FROM ubuntu:22.04
+FROM scratch          # Empty image (for static binaries)
+```
+
+2. WORKDIR (Working Directory)
+
+Purpose: Sets the working directory for all subsequent commands
+
+dockerfile
+```
+WORKDIR /app
+WORKDIR /usr/src/app
+WORKDIR /home/node/app
+```
+
+If directory doesn't exist, it's created automatically
+
+All relative paths are relative to WORKDIR
+
+3. COPY (Copy Files)
+
+Purpose: Copy files/folders from host to image
+
+dockerfile
+```
+# Basic syntax: COPY <source> <destination>
+COPY . /app
+COPY app.py /app/app.py
+COPY requirements.txt .
+COPY --chown=node:node . /app   # Preserve ownership
+```
+Multi-stage copy:
+
+dockerfile
+```
+COPY --from=builder /app/build /app
+```
+
+4. ADD (Advanced Copy)
+
+Purpose: Similar to COPY, but with extra features
+
+- Can copy from URLs
+
+- Auto-extracts tar files
+
+dockerfile
+```
+ADD https://example.com/file.tar.gz /tmp/
+ADD app.tar.gz /app/    # Auto-extracts
+ADD . /app
+⚠️ Best practice: Use COPY unless you need ADD's special features
+```
+
+5. RUN (Execute Commands)
+
+Purpose: Run commands during image build (creates a layer)
+
+dockerfile
+```
+# Single command
+RUN apt-get update
+RUN pip install flask
+```
+
+```
+# Multiple commands (best practice - fewer layers)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+```
+# Alpine
+RUN apk add --no-cache nodejs npm
+```
+
+6. CMD (Default Command)
+
+Purpose: Sets the default command when container starts (can be overridden)
+
+dockerfile
+```
+# Exec form (recommended)
+CMD ["python", "app.py"]
+CMD ["node", "server.js"]
+CMD ["/bin/sh"]
+
+# Shell form
+CMD python app.py
+CMD echo "Hello"
+
+# With arguments
+CMD ["npm", "start"]
+```
+
+Override at runtime:
+```
+bash
+docker run image /bin/bash   # Overrides CMD
+docker run image python test.py
+```
+
+7. ENTRYPOINT (Main Command)
+
+Purpose: Sets the main executable (cannot be easily overridden)
+
+dockerfile
+```
+# Exec form (recommended)
+ENTRYPOINT ["python"]
+CMD ["app.py"]    # CMD provides default arguments
+
+ENTRYPOINT ["nginx"]
+CMD ["-g", "daemon off;"]
+
+# Shell form
+ENTRYPOINT python app.py
+```
+
+Override at runtime:
+```
+bash
+docker run image --help  # Passes --help to ENTRYPOINT
+docker run --entrypoint /bin/bash image
+```
+
+8. EXPOSE (Document Ports)
+
+Purpose: Documents which ports the container listens on (informational)
+
+dockerfile
+```
+EXPOSE 80
+EXPOSE 5000
+EXPOSE 3000/tcp
+EXPOSE 53/udp
+⚠️ Note: This doesn't actually publish the port. You still need -p when running.
+```
+
+9. ENV (Environment Variables)
+
+Purpose: Sets environment variables
+
+dockerfile
+```
+ENV NODE_ENV=production
+ENV APP_PORT=5000
+ENV DB_HOST=postgres
+ENV PATH="/app/bin:${PATH}"
+
+# Multi-line
+ENV APP_VERSION=1.0 \
+    APP_ENV=production
+Override at runtime:
+```
+
+bash
+```
+docker run -e NODE_ENV=development image
+```
+
+10. ARG (Build Arguments)
+
+Purpose: Variables available only during build (not in running container)
+
+dockerfile
+```
+ARG VERSION=latest
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN echo "Building version $VERSION"
+
+# Build with custom values
+FROM ubuntu:$VERSION
+```
+
+Build with args:
+
+bash
+```
+docker build --build-arg VERSION=20.04 -t image .
+```
+
+11. VOLUME (Persistent Storage)
+
+Purpose: Creates a mount point for persistent data
+
+dockerfile
+```
+VOLUME /data
+VOLUME ["/var/log", "/var/lib/mysql"]
+⚠️ Note: Volume location on host is automatically managed (not specified in Dockerfile)
+```
+
+12. USER (User Context)
+
+Purpose: Sets the user to run commands (security best practice)
+
+dockerfile
+```
+# Create user
+RUN adduser -D appuser
+USER appuser
+
+# Or use existing user
+USER node
+USER 1000:1000
+
+WORKDIR /app
+COPY --chown=appuser:appuser . .
+```
+
+13. LABEL (Metadata)
+
+Purpose: Adds metadata to the image
+
+dockerfile
+```
+LABEL maintainer="user@example.com"
+LABEL version="1.0"
+LABEL description="My application"
+View labels:
+```
+
+bash
+```
+docker inspect image
+docker image inspect --format='{{.Config.Labels}}' image
+```
+
+14. HEALTHCHECK (Container Health)
+
+Purpose: Tells Docker how to test if container is working
+
+dockerfile
+```
+# Check every 30s, timeout after 3s, wait 5s before first check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD curl -f http://localhost:5000/ || exit 1
+
+# Use wget (if curl not available)
+HEALTHCHECK --interval=30s \
+  CMD wget -q --spider http://localhost:5000 || exit 1
+```
+
+Check health:
+
+bash
+```
+docker ps
+docker inspect --format='{{.State.Health.Status}}' container
+```
+
+15. ONBUILD (Delayed Execution)
+
+Purpose: Command that runs when image is used as a base for another image
+
+dockerfile
+```
+ONBUILD RUN apt-get update
+ONBUILD COPY . /app
+ONBUILD RUN pip install -r requirements.txt
+```
+
+Use case: Base images for frameworks
+
+16. SHELL (Default Shell)
+
+Purpose: Changes the default shell for shell commands
+
+dockerfile
+```
+SHELL ["/bin/bash", "-c"]
+SHELL ["powershell", "-Command"]   # Windows
+
+RUN echo "This runs with bash"
+```
+
+17. STOPSIGNAL (Stop Signal)
+
+Purpose: Sets the signal used to stop the container
+
+dockerfile
+```
+STOPSIGNAL SIGTERM
+STOPSIGNAL SIGKILL
+```
+
+18. MAINTAINER (Deprecated)
+
+Purpose: (Legacy) Image author information
+
+dockerfile
+```
+MAINTAINER John Doe <john@example.com>   # Deprecated
+LABEL maintainer="john@example.com"      # Use instead
+```
+
+# Docker Compose
+
+Docker Compose, which deploys and manages multi-container applications on Doer nodes running in single-engine mode.
+
+docker-compose up is the most common way to bring up a Compose app (we’re calling a multi-container app defined in a Compose file a Compose app). It builds or pulls all required images, creates all required networks and volumes, and starts all required containers.
+
+By default, docker-compose up expects the name of the Compose file to docker-compose.yml. If your Compose file has a different name, you need to specify it with the -f flag. the following example will deploy an application from a Compose file called prod-equus-bass.yml
+
+```
+$ docker-compose -f prod-equus-bass.yml up
+```
+
+```
+###############################
+version: "3.8" services:
+web-fe: build: .
+command: python app.py ports:
+- target: 5000 published: 5000
+networks:
+- counter-net
+volumes:
+- type: volume
+source: counter-vol
+        target: /code
+  redis:
+    image: "redis:alpine"
+    networks:
+counter-net:
+    networks:
+        counter-net:
+    volumes:
+        counter-vol:
+###############################
+```
+
+We’ll skip through the basics of the file before taking a closer look. e first thing to note is that the file has 4 top-level keys:
+
+• version
+
+• services
+
+• networks
+
+• volumes
+
+Other top-level keys exist, su as secrets and configs, but we’re not looking at those right now.
+
+• build: . this tells Docker to build a new image using the instructions in the Dockerfile in the current directory (.).
+the newly built image will be used in a later step to create the container for this service.
+
+• command: python app.py this tells Docker to run a Python app called app.py as the main app in the
+container. the app.py file must exist in the image, and the image must contain Python. the Dockerfile
+takes care of both of these requirements.
+
+• ports: Tells Docker to map port 5000 inside the container (-target) to port 5000 on the host (published).
+this means that traffic sent to the Docker host on port 5000 will be directed to port 5000 on the container.
+the app inside the container listens on port 5000.
+
+• networks: Tells Docker which network to attach the service’s container to. the network should already
+exist, or be defined in the networks top-level key. If it’s an overlay network, it will need to have the attachable flag so that standalone containers can be attached to it (Compose deploys standalone containers instead of Docker Services).
+
+• volumes: Tells Docker to mount the counter-vol volume (source:) to /code (target:) inside the container. the counter-vol volume needs to already exist,
+or be defined in the volumes top-level key at the bottom of the file.
 
 
 
